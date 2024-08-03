@@ -1,3 +1,19 @@
-.homePage{
 
+.homePage{
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    flex-direction: column;
+}
+
+.title{
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.team{
+    display: flex;
+    font-size: var(--font-xl);
 }

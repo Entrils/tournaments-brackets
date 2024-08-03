@@ -15,13 +15,17 @@ class Match {
         this.team_one = team_one;
         this.team_two = team_two;
         this.winner = null;
-        this.score_one =0;
+        this.score_one = 0;
         this.score_two = 0;
     }
 
 
     setWinner(winner){
         this.winner = winner;
+    }
+
+    matchEnded() {
+        return this.winner !== null
     }
 }
 export default Match;

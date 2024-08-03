@@ -1,7 +1,7 @@
 import { Route, Routes } from 'react-router';
 import './App.css';
 import { BrowserRouter } from 'react-router-dom';
-import {Home} from './Сomponents/home-page/Home';
+import HomeContainer from './Containers/HomeContainer';
 
 
 function App() {
@@ -10,7 +10,7 @@ function App() {
       <BrowserRouter>
         <div>
           <Routes>
-          <Route exact path='/' element={<Home/>}/>
+          <Route exact path='/' element={<HomeContainer/>}/>
           {/*<Route path='/add_teams' component={AddTeamsContainer}/>
           <Route path='/match_view' component={MatchViewContainer}/>
           <Route path='/game-won' component={WinnerContainer}/>*/}
