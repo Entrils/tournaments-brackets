@@ -13,8 +13,6 @@ const store = createStore(rootReducer, applyMiddleware(
   loggerMiddleware
 ))
 
-store.dispatch({type: "MEH"})
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

@@ -13,7 +13,14 @@
     margin-top: 10px;
 }
 
-.team{
+.container{
     display: flex;
+    margin-left: 10%;
+    margin-right: 10%;
+    flex-direction: column;
+}
+
+.teams{
+    margin-top: 16px;
     font-size: var(--font-xl);
 }

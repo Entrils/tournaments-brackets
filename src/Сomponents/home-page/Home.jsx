@@ -1,3 +1,4 @@
+/* eslint-disable array-callback-return */
 import React, { Component } from 'react'
 import styles from './Home.module.css'
 
@@ -17,7 +18,14 @@ render(){
   return (
     <div className={styles.homePage}>
         <h1 className={styles.title}>Welcome to the Home Page</h1>
-        <div className={styles.teams}>{this.renderTeams()}</div>
+        <div className={styles.container}>
+          <button 
+          type="button" className='btn btn-block btn-primary'>Add Team</button>
+          
+          <div className={styles.teams}>
+            {this.renderTeams()}
+          </div>
+        </div>
     </div>
   )
 }
