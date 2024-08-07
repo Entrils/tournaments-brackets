@@ -1,5 +1,5 @@
 import { connect } from "react-redux";
-import { AddTeams } from "../Сomponents/AddTeams/AddTeams";
+import AddTeams from "../Сomponents/AddTeams/AddTeams";
 import { addTeam } from "../Actions";
 
 const mapStateToProps = state => ({
