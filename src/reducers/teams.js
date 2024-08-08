@@ -1,4 +1,3 @@
-import { addTeam } from '../Actions';
 import { ADD_TEAM } from '../Constants';
 import Team from '../Models/Team'
 

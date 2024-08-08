@@ -14,11 +14,16 @@ class AddTeams extends Component {
     }
 
     this.submitTeam = this.submitTeam.bind(this);
+    this.handleInputChange = this.handleInputChange.bind(this);
   }
   
   submitTeam(){
    let team = this.state;
    console.log(team)
+  }
+
+  handleInputChange(e, type){
+    console.log(type);
   }
 
   render(){
@@ -29,11 +34,14 @@ class AddTeams extends Component {
         <div>
           <div className='form-group'>
             <label>Name: </label>
-            <input className='form-control'/>
+            <input onChange={(e) => this.handleInputChange(e,"")}
+            value={this.state.team.name}
+            className='form-control'/>
           </div>
           <div className='form-group'>
             <label>Image Url: </label>
-            <input className='form-control'/>
+            <input value={this.state.team.img_url}
+            className='form-control'/>
           </div>
 
 
