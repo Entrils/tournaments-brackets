@@ -23,7 +23,13 @@ class AddTeams extends Component {
   }
 
   handleInputChange(e, type){
-    console.log(type);
+    e.preventDefault();
+
+    let value = e.target.value;
+    let new_state = this.state;
+    new_state.team[type] = value;
+
+    this.setState(new_state)
   }
 
   render(){
@@ -32,15 +38,16 @@ class AddTeams extends Component {
         <h1>Add a team</h1>
 
         <div>
-          <div className='form-group'>
+          <div className='form-group' key={this.state.team.id}>
             <label>Name: </label>
-            <input onChange={(e) => this.handleInputChange(e,"")}
+            <input onChange={(e) => this.handleInputChange(e,"name")}
             value={this.state.team.name}
             className='form-control'/>
           </div>
           <div className='form-group'>
             <label>Image Url: </label>
-            <input value={this.state.team.img_url}
+            <input onChange={(e) => this.handleInputChange(e,"img_url")} 
+            value={this.state.team.img_url}
             className='form-control'/>
           </div>
 
