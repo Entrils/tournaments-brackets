@@ -1,7 +1,7 @@
-import { combineReducers } from "@reduxjs/toolkit/react";
-import { teams } from "./teams";
+import { combineReducers } from "redux";
+import { tournaments } from "./tournaments";
 
 export const rootReducer = combineReducers({
-    teams
-})
+  tournaments,
+});
 

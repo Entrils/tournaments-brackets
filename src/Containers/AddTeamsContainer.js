@@ -1,18 +1,15 @@
 import { connect } from "react-redux";
-import AddTeams from "../Сomponents/AddTeams/AddTeams";
-import { addTeam } from "../Actions";
+import { addTeam, deleteTeam, updateTeam } from "../Actions";
+import AddTeams from "../components/add-teams/AddTeams";
 
-const mapStateToProps = state => ({
-    
-})
+const mapStateToProps = (state) => ({
+  tournaments: state.tournaments,
+});
 
-const mapDispatchToProps = dispatch => ({
-    AddTeams: (team) => {
-        dispatch(addTeam(team));
-    }
-})
+const mapDispatchToProps = (dispatch) => ({
+  addTeam: (tournamentId, team) => dispatch(addTeam(tournamentId, team)),
+  updateTeam: (tournamentId, team) => dispatch(updateTeam(tournamentId, team)),
+  deleteTeam: (tournamentId, teamId) => dispatch(deleteTeam(tournamentId, teamId)),
+});
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps,
-)(AddTeams)
+export default connect(mapStateToProps, mapDispatchToProps)(AddTeams);

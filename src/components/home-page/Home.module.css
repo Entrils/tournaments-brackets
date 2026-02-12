@@ -1,0 +1,80 @@
+.page {
+  min-height: 100vh;
+  padding: 24px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.header p {
+  margin-top: 8px;
+  color: #5d6369;
+}
+
+.createCard {
+  border: 1px solid #d8dee4;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 18px;
+}
+
+.createForm {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.list {
+  margin-top: 24px;
+}
+
+.list ul {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.item {
+  border: 1px solid #d8dee4;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.info {
+  display: grid;
+  gap: 4px;
+}
+
+.info h3 {
+  margin: 0;
+}
+
+.info p,
+.info small {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.error {
+  color: #b42318;
+  margin: 8px 0 0;
+}
+
+@media (max-width: 720px) {
+  .createForm {
+    flex-direction: column;
+  }
+
+  .item {
+    flex-direction: column;
+  }
+}
