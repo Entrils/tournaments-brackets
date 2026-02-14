@@ -5,7 +5,10 @@ import { applyMiddleware, createStore } from "redux";
 import { createLogger } from "redux-logger";
 import { uid } from "uid";
 import App from "./App";
-import { TOURNAMENT_MODE_SINGLE } from "./Constants";
+import {
+  SEEDING_STRATEGY_RANDOM,
+  TOURNAMENT_MODE_SINGLE,
+} from "./Constants";
 import { rootReducer } from "./reducers";
 import reportWebVitals from "./reportWebVitals";
 
@@ -13,22 +16,39 @@ const loggerMiddleware = createLogger();
 const STORAGE_KEY = "tournament_brackets_state";
 const LEGACY_TEAMS_KEY = "tournament_brackets_teams";
 
+const normalizeTeam = (team) => {
+  if (!team || !team.id || !team.name) {
+    return null;
+  }
+
+  return {
+    id: team.id,
+    name: String(team.name),
+    img_url: team.img_url || "",
+    rating: Number.isInteger(team.rating) && team.rating >= 0 ? team.rating : null,
+    manualSeed:
+      Number.isInteger(team.manualSeed) && team.manualSeed > 0 ? team.manualSeed : null,
+  };
+};
+
 const normalizeTournament = (item) => {
   if (!item || !item.id || !Array.isArray(item.teams)) {
     return null;
   }
+  const teams = item.teams.map(normalizeTeam).filter(Boolean);
 
   return {
     id: item.id,
     name: item.name || "Tournament",
     mode: item.mode || TOURNAMENT_MODE_SINGLE,
-    teams: item.teams,
+    teams,
     bracketTeamIds: Array.isArray(item.bracketTeamIds)
       ? item.bracketTeamIds
       : null,
     groupTeamIds: Array.isArray(item.groupTeamIds) ? item.groupTeamIds : null,
     winnerSelections: item.winnerSelections || {},
     matchResults: item.matchResults || {},
+    seedingStrategy: item.seedingStrategy || SEEDING_STRATEGY_RANDOM,
     championId: item.championId || null,
     completedAt: item.completedAt || null,
     createdAt: item.createdAt || new Date().toISOString(),
@@ -61,6 +81,7 @@ const loadPreloadedState = () => {
               groupTeamIds: null,
               winnerSelections: {},
               matchResults: {},
+              seedingStrategy: SEEDING_STRATEGY_RANDOM,
               championId: null,
               completedAt: null,
               createdAt: new Date().toISOString(),

@@ -3,6 +3,20 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import Team from "../../Models/Team";
 import styles from "./AddTeams.module.css";
 
+const parseOptionalInt = (rawValue, { min = 0, fieldName = "Value" } = {}) => {
+  const value = String(rawValue ?? "").trim();
+  if (!value) {
+    return { value: null, error: "" };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min) {
+    return { value: null, error: `${fieldName} must be an integer >= ${min}.` };
+  }
+
+  return { value: parsed, error: "" };
+};
+
 const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
   const { tournamentId } = useParams();
   const tournament = useMemo(
@@ -12,11 +26,15 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
 
   const [name, setName] = useState("");
   const [imgUrl, setImgUrl] = useState("");
+  const [rating, setRating] = useState("");
+  const [manualSeed, setManualSeed] = useState("");
   const [error, setError] = useState("");
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editImgUrl, setEditImgUrl] = useState("");
+  const [editRating, setEditRating] = useState("");
+  const [editManualSeed, setEditManualSeed] = useState("");
 
   if (!tournament) {
     return <Navigate to="/" replace />;
@@ -47,9 +65,34 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
       return;
     }
 
-    addTeam(tournament.id, new Team(normalizedName, imgUrl.trim()));
+    const parsedRating = parseOptionalInt(rating, { min: 0, fieldName: "Rating" });
+    if (parsedRating.error) {
+      setError(parsedRating.error);
+      return;
+    }
+
+    const parsedManualSeed = parseOptionalInt(manualSeed, {
+      min: 1,
+      fieldName: "Manual seed",
+    });
+    if (parsedManualSeed.error) {
+      setError(parsedManualSeed.error);
+      return;
+    }
+
+    addTeam(
+      tournament.id,
+      new Team(
+        normalizedName,
+        imgUrl.trim(),
+        parsedRating.value,
+        parsedManualSeed.value
+      )
+    );
     setName("");
     setImgUrl("");
+    setRating("");
+    setManualSeed("");
     setError("");
   };
 
@@ -57,6 +100,8 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
     setEditingId(team.id);
     setEditName(team.name || "");
     setEditImgUrl(team.img_url || "");
+    setEditRating(team.rating ?? "");
+    setEditManualSeed(team.manualSeed ?? "");
     setError("");
   };
 
@@ -64,6 +109,8 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
     setEditingId(null);
     setEditName("");
     setEditImgUrl("");
+    setEditRating("");
+    setEditManualSeed("");
     setError("");
   };
 
@@ -80,10 +127,27 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
       return;
     }
 
+    const parsedRating = parseOptionalInt(editRating, { min: 0, fieldName: "Rating" });
+    if (parsedRating.error) {
+      setError(parsedRating.error);
+      return;
+    }
+
+    const parsedManualSeed = parseOptionalInt(editManualSeed, {
+      min: 1,
+      fieldName: "Manual seed",
+    });
+    if (parsedManualSeed.error) {
+      setError(parsedManualSeed.error);
+      return;
+    }
+
     updateTeam(tournament.id, {
       ...team,
       name: normalizedName,
       img_url: editImgUrl.trim(),
+      rating: parsedRating.value,
+      manualSeed: parsedManualSeed.value,
     });
     cancelEdit();
   };
@@ -141,6 +205,18 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
               className="form-control"
               placeholder="Image URL (optional)"
             />
+            <input
+              value={rating}
+              onChange={(event) => setRating(event.target.value)}
+              className="form-control"
+              placeholder="Rating (optional, integer >= 0)"
+            />
+            <input
+              value={manualSeed}
+              onChange={(event) => setManualSeed(event.target.value)}
+              className="form-control"
+              placeholder="Manual seed (optional, integer >= 1)"
+            />
             <button type="submit" className="btn btn-primary">
               Save team
             </button>
@@ -171,6 +247,18 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
                         className="form-control"
                         placeholder="Image URL"
                       />
+                      <input
+                        value={editRating}
+                        onChange={(event) => setEditRating(event.target.value)}
+                        className="form-control"
+                        placeholder="Rating (integer >= 0)"
+                      />
+                      <input
+                        value={editManualSeed}
+                        onChange={(event) => setEditManualSeed(event.target.value)}
+                        className="form-control"
+                        placeholder="Manual seed (integer >= 1)"
+                      />
                       <div className={styles.rowActions}>
                         <button
                           type="button"
@@ -199,6 +287,10 @@ const AddTeams = ({ tournaments, addTeam, updateTeam, deleteTeam }) => {
                         ) : (
                           <small>no image</small>
                         )}
+                        <small>
+                          rating: {Number.isInteger(team.rating) ? team.rating : "n/a"} | seed:{" "}
+                          {Number.isInteger(team.manualSeed) ? team.manualSeed : "n/a"}
+                        </small>
                       </div>
                       {!isCompleted && (
                         <div className={styles.rowActions}>

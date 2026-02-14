@@ -51,7 +51,9 @@ describe("Bracket", () => {
     expect(screen.queryByText("Round of 4")).not.toBeInTheDocument();
 
     userEvent.click(screen.getByRole("button", { name: /Generate Bracket/i }));
-    expect(generateTournamentBracket).toHaveBeenCalledWith("t-1");
+    expect(generateTournamentBracket).toHaveBeenCalledWith("t-1", {
+      seedingStrategy: "random",
+    });
   });
 
   it("renders rounds when bracket already generated", () => {

@@ -20,8 +20,8 @@ const mapDispatchToProps = (dispatch) => ({
   requestMatchReplay: (tournamentId, matchKey) =>
     dispatch(requestMatchReplay(tournamentId, matchKey)),
   resetTournamentBracket: (tournamentId) => dispatch(resetTournamentBracket(tournamentId)),
-  generateTournamentBracket: (tournamentId) =>
-    dispatch(generateTournamentBracket(tournamentId)),
+  generateTournamentBracket: (tournamentId, options) =>
+    dispatch(generateTournamentBracket(tournamentId, options)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Bracket);

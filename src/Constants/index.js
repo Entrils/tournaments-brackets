@@ -12,3 +12,7 @@ export const GENERATE_TOURNAMENT_BRACKET = "GENERATE_TOURNAMENT_BRACKET";
 export const TOURNAMENT_MODE_SINGLE = "single_elimination";
 export const TOURNAMENT_MODE_DOUBLE = "double_elimination";
 export const TOURNAMENT_MODE_GROUPS = "groups_playoffs";
+
+export const SEEDING_STRATEGY_RANDOM = "random";
+export const SEEDING_STRATEGY_MANUAL = "manual";
+export const SEEDING_STRATEGY_RATING = "rating";

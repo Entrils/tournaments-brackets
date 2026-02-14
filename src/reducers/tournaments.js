@@ -6,6 +6,7 @@ import {
   GENERATE_TOURNAMENT_BRACKET,
   REQUEST_MATCH_REPLAY,
   RESET_TOURNAMENT_BRACKET,
+  SEEDING_STRATEGY_RANDOM,
   SET_MATCH_RESULT,
   SET_MATCH_WINNER,
   TOURNAMENT_MODE_GROUPS,
@@ -15,22 +16,15 @@ import {
 import {
   buildTournamentView,
   createGroupTeamIdBuckets,
+  isValidGroupsTeamCount,
   isBracketGenerated,
+  sortTeamsBySeeding,
 } from "../utils/bracket";
 
 const withTournamentUpdated = (state, tournamentId, updater) =>
   state.map((tournament) =>
     tournament.id === tournamentId ? updater(tournament) : tournament
   );
-
-const shuffle = (items) => {
-  const next = [...items];
-  for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [next[i], next[j]] = [next[j], next[i]];
-  }
-  return next;
-};
 
 const resetBracketState = (tournament) => ({
   ...tournament,
@@ -74,14 +68,21 @@ const enrichCompletionStatus = (tournament) => {
   };
 };
 
-const generateByMode = (tournament) => {
-  const ids = shuffle(tournament.teams.map((team) => team.id));
+const generateByMode = (tournament, seedingStrategy) => {
+  const strategy = seedingStrategy || tournament.seedingStrategy || SEEDING_STRATEGY_RANDOM;
+  const sortedTeams = sortTeamsBySeeding(tournament.teams, strategy);
+  const ids = sortedTeams.map((team) => team.id);
   const base = resetBracketState({
     ...tournament,
     mode: tournament.mode || TOURNAMENT_MODE_SINGLE,
+    seedingStrategy: strategy,
   });
 
   if (tournament.mode === TOURNAMENT_MODE_GROUPS) {
+    if (!isValidGroupsTeamCount(ids.length)) {
+      return base;
+    }
+
     return {
       ...base,
       groupTeamIds: createGroupTeamIdBuckets(ids),
@@ -138,7 +139,7 @@ export const tournaments = (state = [], action) => {
           return tournament;
         }
 
-        return generateByMode(tournament);
+        return generateByMode(tournament, action.seedingStrategy);
       });
     case SET_MATCH_WINNER:
       return withTournamentUpdated(state, action.tournamentId, (tournament) => {

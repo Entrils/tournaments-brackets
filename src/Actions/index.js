@@ -9,6 +9,7 @@ import {
   RESET_TOURNAMENT_BRACKET,
   SET_MATCH_RESULT,
   SET_MATCH_WINNER,
+  SEEDING_STRATEGY_RANDOM,
   TOURNAMENT_MODE_SINGLE,
   UPDATE_TEAM,
 } from "../Constants";
@@ -24,6 +25,7 @@ export const createTournament = (name, mode = TOURNAMENT_MODE_SINGLE) => ({
     groupTeamIds: null,
     winnerSelections: {},
     matchResults: {},
+    seedingStrategy: SEEDING_STRATEGY_RANDOM,
     championId: null,
     completedAt: null,
     createdAt: new Date().toISOString(),
@@ -78,7 +80,8 @@ export const resetTournamentBracket = (tournamentId) => ({
   tournamentId,
 });
 
-export const generateTournamentBracket = (tournamentId) => ({
+export const generateTournamentBracket = (tournamentId, options = {}) => ({
   type: GENERATE_TOURNAMENT_BRACKET,
   tournamentId,
+  seedingStrategy: options.seedingStrategy || null,
 });

@@ -1,10 +1,34 @@
 import {
+  SEEDING_STRATEGY_MANUAL,
+  SEEDING_STRATEGY_RANDOM,
+  SEEDING_STRATEGY_RATING,
   TOURNAMENT_MODE_DOUBLE,
   TOURNAMENT_MODE_GROUPS,
   TOURNAMENT_MODE_SINGLE,
 } from "../Constants";
 
 const getBracketSize = (teamCount) => 2 ** Math.ceil(Math.log2(teamCount));
+export const GROUP_STAGE_ALLOWED_TEAM_COUNTS = [4, 8];
+
+export const isValidGroupsTeamCount = (teamCount) =>
+  GROUP_STAGE_ALLOWED_TEAM_COUNTS.includes(teamCount);
+
+export const getGroupsTeamCountValidationMessage = (teamCount) => {
+  if (isValidGroupsTeamCount(teamCount)) {
+    return "";
+  }
+
+  return `Group mode supports only ${GROUP_STAGE_ALLOWED_TEAM_COUNTS.join(
+    " or "
+  )} teams. Current: ${teamCount}.`;
+};
+
+const toSafeInt = (value, { min = 0, fallback = null } = {}) => {
+  if (!Number.isInteger(value) || value < min) {
+    return fallback;
+  }
+  return value;
+};
 
 const matchKey = (roundIndex, matchIndex, keyPrefix = "") =>
   `${keyPrefix}${roundIndex}-${matchIndex}`;
@@ -424,6 +448,8 @@ const buildGroupData = (group, winnerSelections, matchResults = {}) => {
   const points = new Map(group.teams.map((team) => [team.id, 0]));
   const wins = new Map(group.teams.map((team) => [team.id, 0]));
   const losses = new Map(group.teams.map((team) => [team.id, 0]));
+  const goalsFor = new Map(group.teams.map((team) => [team.id, 0]));
+  const goalsAgainst = new Map(group.teams.map((team) => [team.id, 0]));
   const matches = [];
 
   for (let i = 0; i < group.teams.length; i += 1) {
@@ -445,6 +471,15 @@ const buildGroupData = (group, winnerSelections, matchResults = {}) => {
         losses.set(loserId, (losses.get(loserId) || 0) + 1);
       }
 
+      const scoreOne = toSafeInt(matchResults[key]?.scoreOne, { min: 0 });
+      const scoreTwo = toSafeInt(matchResults[key]?.scoreTwo, { min: 0 });
+      if (scoreOne !== null && scoreTwo !== null) {
+        goalsFor.set(teamOne.id, (goalsFor.get(teamOne.id) || 0) + scoreOne);
+        goalsAgainst.set(teamOne.id, (goalsAgainst.get(teamOne.id) || 0) + scoreTwo);
+        goalsFor.set(teamTwo.id, (goalsFor.get(teamTwo.id) || 0) + scoreTwo);
+        goalsAgainst.set(teamTwo.id, (goalsAgainst.get(teamTwo.id) || 0) + scoreOne);
+      }
+
       matches.push({
         key,
         teamOne,
@@ -456,18 +491,75 @@ const buildGroupData = (group, winnerSelections, matchResults = {}) => {
     }
   }
 
-  const standings = [...group.teams]
+  const baseStandings = [...group.teams]
     .map((team) => ({
       team,
       points: points.get(team.id) || 0,
       wins: wins.get(team.id) || 0,
       losses: losses.get(team.id) || 0,
-    }))
-    .sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (b.wins !== a.wins) return b.wins - a.wins;
-      return a.team.name.localeCompare(b.team.name);
+      goalsFor: goalsFor.get(team.id) || 0,
+      goalsAgainst: goalsAgainst.get(team.id) || 0,
+      goalDiff: (goalsFor.get(team.id) || 0) - (goalsAgainst.get(team.id) || 0),
+      headToHeadPoints: 0,
+    }));
+
+  const standingsByPoints = baseStandings.reduce((acc, item) => {
+    const key = item.points;
+    if (!acc.has(key)) {
+      acc.set(key, []);
+    }
+    acc.get(key).push(item);
+    return acc;
+  }, new Map());
+
+  const sortedPointValues = [...standingsByPoints.keys()].sort((a, b) => b - a);
+  const standings = sortedPointValues.flatMap((pointsValue) => {
+    const tied = standingsByPoints.get(pointsValue) || [];
+    if (tied.length < 2) {
+      return tied;
+    }
+
+    const tiedIds = new Set(tied.map((item) => item.team.id));
+    const headToHeadPoints = tied.reduce((acc, item) => {
+      acc.set(item.team.id, 0);
+      return acc;
+    }, new Map());
+
+    matches.forEach((match) => {
+      if (!match.winner || !match.teamOne || !match.teamTwo) {
+        return;
+      }
+      if (!tiedIds.has(match.teamOne.id) || !tiedIds.has(match.teamTwo.id)) {
+        return;
+      }
+
+      headToHeadPoints.set(
+        match.winner.id,
+        (headToHeadPoints.get(match.winner.id) || 0) + 3
+      );
     });
+
+    return [...tied]
+      .map((item) => ({
+        ...item,
+        headToHeadPoints: headToHeadPoints.get(item.team.id) || 0,
+      }))
+      .sort((a, b) => {
+        if (b.headToHeadPoints !== a.headToHeadPoints) {
+          return b.headToHeadPoints - a.headToHeadPoints;
+        }
+        if (b.goalDiff !== a.goalDiff) {
+          return b.goalDiff - a.goalDiff;
+        }
+        if (b.goalsFor !== a.goalsFor) {
+          return b.goalsFor - a.goalsFor;
+        }
+        if (b.wins !== a.wins) {
+          return b.wins - a.wins;
+        }
+        return a.team.name.localeCompare(b.team.name);
+      });
+  });
 
   return {
     ...group,
@@ -523,11 +615,11 @@ export const buildGroupsAndPlayoffsBracket = (
 };
 
 export const createGroupTeamIdBuckets = (teamIds) => {
-  if (!Array.isArray(teamIds) || teamIds.length < 2) {
+  if (!Array.isArray(teamIds) || !isValidGroupsTeamCount(teamIds.length)) {
     return null;
   }
 
-  const groupCount = teamIds.length >= 8 ? 2 : 1;
+  const groupCount = teamIds.length === 8 ? 2 : 1;
   const groups = Array.from({ length: groupCount }, () => []);
 
   teamIds.forEach((id, index) => {
@@ -535,6 +627,47 @@ export const createGroupTeamIdBuckets = (teamIds) => {
   });
 
   return groups;
+};
+
+const byName = (a, b) => a.name.localeCompare(b.name);
+
+export const sortTeamsBySeeding = (teams, strategy = SEEDING_STRATEGY_RANDOM) => {
+  if (!Array.isArray(teams)) {
+    return [];
+  }
+
+  if (strategy === SEEDING_STRATEGY_RATING) {
+    return [...teams].sort((a, b) => {
+      const ratingA = toSafeInt(a.rating, { min: 0, fallback: -1 });
+      const ratingB = toSafeInt(b.rating, { min: 0, fallback: -1 });
+      if (ratingB !== ratingA) {
+        return ratingB - ratingA;
+      }
+      return byName(a, b);
+    });
+  }
+
+  if (strategy === SEEDING_STRATEGY_MANUAL) {
+    return [...teams].sort((a, b) => {
+      const seedA = toSafeInt(a.manualSeed, { min: 1, fallback: Number.MAX_SAFE_INTEGER });
+      const seedB = toSafeInt(b.manualSeed, { min: 1, fallback: Number.MAX_SAFE_INTEGER });
+      if (seedA !== seedB) {
+        return seedA - seedB;
+      }
+      return byName(a, b);
+    });
+  }
+
+  if (strategy === SEEDING_STRATEGY_RANDOM) {
+    const next = [...teams];
+    for (let i = next.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [next[i], next[j]] = [next[j], next[i]];
+    }
+    return next;
+  }
+
+  return [...teams].sort(byName);
 };
 
 const getMode = (tournament) => tournament.mode || TOURNAMENT_MODE_SINGLE;

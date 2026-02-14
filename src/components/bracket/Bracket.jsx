@@ -1,12 +1,16 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import {
+  SEEDING_STRATEGY_MANUAL,
+  SEEDING_STRATEGY_RANDOM,
+  SEEDING_STRATEGY_RATING,
   TOURNAMENT_MODE_DOUBLE,
   TOURNAMENT_MODE_GROUPS,
   TOURNAMENT_MODE_SINGLE,
 } from "../../Constants";
 import {
   buildTournamentView,
+  getGroupsTeamCountValidationMessage,
   isBracketGenerated,
 } from "../../utils/bracket";
 import styles from "./Bracket.module.css";
@@ -27,6 +31,16 @@ const modeLabel = (mode) => {
   if (mode === TOURNAMENT_MODE_GROUPS) return "Group stage + playoffs";
   return "Single elimination";
 };
+
+const seedingOptions = [
+  { value: SEEDING_STRATEGY_RANDOM, label: "Random seeding" },
+  { value: SEEDING_STRATEGY_MANUAL, label: "Manual seed (by team seed field)" },
+  { value: SEEDING_STRATEGY_RATING, label: "Rating seeding (desc)" },
+];
+
+const seedingLabel = (value) =>
+  seedingOptions.find((option) => option.value === value)?.label ||
+  "Random seeding";
 
 const parseScoreInput = (rawValue) => {
   const value = String(rawValue ?? "").trim();
@@ -243,11 +257,19 @@ const Bracket = ({
   const [technicalForfeit, setTechnicalForfeit] = useState(false);
   const [matchFormError, setMatchFormError] = useState("");
   const [replayMatchTarget, setReplayMatchTarget] = useState(null);
+  const [seedingStrategy, setSeedingStrategy] = useState(SEEDING_STRATEGY_RANDOM);
 
   const tournament = useMemo(
     () => tournaments.find((item) => item.id === tournamentId),
     [tournaments, tournamentId]
   );
+
+  useEffect(() => {
+    if (!tournament) {
+      return;
+    }
+    setSeedingStrategy(tournament.seedingStrategy || SEEDING_STRATEGY_RANDOM);
+  }, [tournament]);
 
   if (!tournament) {
     return <Navigate to="/" replace />;
@@ -260,6 +282,11 @@ const Bracket = ({
   const champion = view.champion;
   const isCompleted = Boolean(tournament.completedAt);
   const generated = isBracketGenerated(tournament);
+  const groupValidationMessage =
+    tournament.mode === TOURNAMENT_MODE_GROUPS
+      ? getGroupsTeamCountValidationMessage(tournament.teams.length)
+      : "";
+  const hasGroupValidationError = Boolean(groupValidationMessage);
 
   const openEditModal = (match) => {
     if (!match.teamOne || !match.teamTwo) {
@@ -354,6 +381,7 @@ const Bracket = ({
           <p>
             Mode: {modeLabel(tournament.mode)} | Status: {isCompleted ? "Completed" : "In progress"}
           </p>
+          <p>Seeding: {seedingLabel(tournament.seedingStrategy || SEEDING_STRATEGY_RANDOM)}</p>
         </div>
         <div className={styles.headerActions}>
           {!isCompleted && generated && (
@@ -383,13 +411,30 @@ const Bracket = ({
       {!generated ? (
         <section className={styles.generateCard}>
           <p>Bracket is not generated yet.</p>
+          <select
+            className="form-control"
+            value={seedingStrategy}
+            onChange={(event) => setSeedingStrategy(event.target.value)}
+            disabled={isCompleted}
+          >
+            {seedingOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {hasGroupValidationError && <p className={styles.empty}>{groupValidationMessage}</p>}
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => generateTournamentBracket(tournament.id)}
-            disabled={isCompleted}
+            onClick={() =>
+              generateTournamentBracket(tournament.id, {
+                seedingStrategy,
+              })
+            }
+            disabled={isCompleted || hasGroupValidationError}
           >
-            Generate Bracket (Random)
+            Generate Bracket
           </button>
         </section>
       ) : (
@@ -406,6 +451,10 @@ const Bracket = ({
                         <tr>
                           <th>Team</th>
                           <th>Pts</th>
+                          <th>H2H</th>
+                          <th>GF</th>
+                          <th>GA</th>
+                          <th>GD</th>
                           <th>W</th>
                           <th>L</th>
                         </tr>
@@ -415,6 +464,10 @@ const Bracket = ({
                           <tr key={row.team.id}>
                             <td>{row.team.name}</td>
                             <td>{row.points}</td>
+                            <td>{row.headToHeadPoints}</td>
+                            <td>{row.goalsFor}</td>
+                            <td>{row.goalsAgainst}</td>
+                            <td>{row.goalDiff}</td>
                             <td>{row.wins}</td>
                             <td>{row.losses}</td>
                           </tr>
